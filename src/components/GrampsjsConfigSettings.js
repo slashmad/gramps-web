@@ -267,6 +267,46 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
           margin-bottom: 0.8em;
         }
 
+        .email-test {
+          margin-bottom: 1em;
+          padding: 0.9em;
+          border: 1px solid var(--grampsjs-body-font-color-15);
+          border-radius: 8px;
+          background: var(--grampsjs-body-background, transparent);
+        }
+
+        .email-test h4 {
+          margin: 0 0 0.5em 0;
+        }
+
+        .email-test .fields {
+          display: grid;
+          gap: 0.6em;
+          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+          margin-bottom: 0.6em;
+        }
+
+        .email-test .actions {
+          margin-bottom: 0.5em;
+        }
+
+        .email-test-status {
+          font-size: 13px;
+          line-height: 1.3;
+        }
+
+        .email-test-status.ok {
+          color: #1b7f3a;
+        }
+
+        .email-test-status.error {
+          color: #b00020;
+        }
+
+        .email-test-status.pending {
+          color: var(--grampsjs-body-font-color-70);
+        }
+
         mwc-button + mwc-button {
           margin-left: 0.4em;
         }
@@ -283,6 +323,10 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
       _busyKey: {type: String},
       _filter: {type: String},
       _saveStatus: {type: Object},
+      _emailTestTo: {type: String},
+      _emailTestUsername: {type: String},
+      _emailTestBusy: {type: Boolean},
+      _emailTestStatus: {type: Object},
     }
   }
 
@@ -295,6 +339,10 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     this._busyKey = ''
     this._filter = ''
     this._saveStatus = {}
+    this._emailTestTo = ''
+    this._emailTestUsername = ''
+    this._emailTestBusy = false
+    this._emailTestStatus = null
   }
 
   connectedCallback() {
@@ -331,6 +379,60 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
             'Most settings apply live. Some startup/runtime settings may still require an app restart.'
           )}
         </p>
+      </div>
+      <div class="email-test">
+        <h4>${this._('Email test')}</h4>
+        <p>
+          ${this._(
+            'Send a test e-mail using the current SMTP settings saved above.'
+          )}
+        </p>
+        <div class="fields">
+          <mwc-textfield
+            outlined
+            type="email"
+            label="${this._('Recipient e-mail')}"
+            .value="${this._emailTestTo}"
+            ?disabled=${!this.appState.permissions.canEditSettings ||
+            this._emailTestBusy}
+            @input="${e => {
+              this._emailTestTo = e.target.value
+            }}"
+          ></mwc-textfield>
+          <mwc-textfield
+            outlined
+            label="${this._('Username in template')}"
+            .value="${this._emailTestUsername}"
+            ?disabled=${!this.appState.permissions.canEditSettings ||
+            this._emailTestBusy}
+            @input="${e => {
+              this._emailTestUsername = e.target.value
+            }}"
+          ></mwc-textfield>
+        </div>
+        <div class="actions">
+          <mwc-button
+            outlined
+            ?disabled=${!this.appState.permissions.canEditSettings ||
+            this._emailTestBusy}
+            @click="${() => this._sendEmailTest('confirm-email')}"
+            >${this._('Send confirm e-mail test')}</mwc-button
+          >
+          <mwc-button
+            outlined
+            ?disabled=${!this.appState.permissions.canEditSettings ||
+            this._emailTestBusy}
+            @click="${() => this._sendEmailTest('reset-pw')}"
+            >${this._('Send reset-password test')}</mwc-button
+          >
+        </div>
+        ${this._emailTestStatus
+          ? html`<div
+              class="email-test-status ${this._emailTestStatus.state}"
+            >
+              ${this._emailTestStatus.message}
+            </div>`
+          : ''}
       </div>
       <mwc-textfield
         class="filter"
@@ -567,6 +669,10 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     this._saveStatus = copy
   }
 
+  _setEmailTestStatus(state, message) {
+    this._emailTestStatus = {state, message}
+  }
+
   static _errorText(error) {
     if (!error) {
       return ''
@@ -636,6 +742,40 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     })
     this._formData = formData
     this._loading = false
+  }
+
+  async _sendEmailTest(template) {
+    const mailTo = this._emailTestTo.trim()
+    const username = this._emailTestUsername.trim()
+    if (!mailTo || !username) {
+      this._setEmailTestStatus(
+        'error',
+        this._('Recipient e-mail and username are required.')
+      )
+      return
+    }
+    this._emailTestBusy = true
+    this._setEmailTestStatus('pending', this._('Sending...'))
+    const res = await this.appState.apiPost(
+      '/api/config/email/test/',
+      {mail_to: mailTo, username, template},
+      {dbChanged: false}
+    )
+    this._emailTestBusy = false
+    if ('error' in res) {
+      this._setEmailTestStatus(
+        'error',
+        this.constructor._errorText(res.error)
+      )
+      fireEvent(this, 'grampsjs:error', {message: res.error})
+      return
+    }
+    const successMessage =
+      template === 'confirm-email'
+        ? this._('Confirm e-mail test sent.')
+        : this._('Reset-password e-mail test sent.')
+    this._setEmailTestStatus('ok', successMessage)
+    fireEvent(this, 'grampsjs:notification', {message: successMessage})
   }
 
   async _save(key) {
