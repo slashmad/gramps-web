@@ -1,3 +1,17 @@
+> [!IMPORTANT]
+> **Local Patch Block (2026-02-15)**
+>
+> This fork includes an admin-focused configuration update:
+> - Added a new **Server configuration** editor in the web UI (Settings → Administration).
+> - Config values are loaded from `/api/config/?full=1` (with fallback to `/api/config/`).
+> - Added per-setting **Save** and **Reset** actions and status for DB override/default usage.
+> - Added frontend permissions for `ViewSettings` and `EditSettings`.
+> - Fixed settings menu consistency (`Researcher Information` entry) and a system info markup bug.
+>
+> Full “control everything via web UI” requires the matching backend update in
+> **gramps-web-api** (expanded `/api/config` handling + runtime override application).
+> Without that backend update, the new UI still works for legacy `/api/config` behavior.
+>
 # Gramps Web &ndash; Frontend
 
 Welcome to **Gramps Web**, a modern, feature-packed, free & open source web app for browsing and collaboratively editing genealogical databases. Fully interoperable with the [Gramps](https://gramps-project.org) desktop application, Gramps Web brings your family history to the web, making it accessible from anywhere and easy to share.
@@ -71,4 +85,3 @@ Note that this Github repository contains the source code of the Gramps Web user
 ## Roadmap
 
 Gramps Web does not follow a fixed-date roadmap. However, you can explore prioritized feature requests and ongoing development efforts via our [development board](https://github.com/orgs/gramps-project/projects/1/views/1). This board provides an up-to-date view of what the developers are working on and what's coming next. Note that the roadmap reflects the current priorities of existing developers, not a restriction on what can be contributed.
-

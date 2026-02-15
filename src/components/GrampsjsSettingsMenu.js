@@ -16,6 +16,7 @@ import {
   mdiWrench,
   mdiAccountMultiple,
   mdiAccountCog,
+  mdiAccountTie,
   mdiHelp,
 } from '@mdi/js'
 import {sharedStyles} from '../SharedStyles.js'
@@ -28,6 +29,7 @@ const menuItems = [
   ['Administration', '/settings/administration', mdiWrench, true],
   ['Manage users', '/settings/users', mdiAccountMultiple, true],
   ['System Information', '/settings/info', mdiInformation, false],
+  ['Researcher Information', '/settings/researcher', mdiAccountTie, false],
   ['Help', '/help', mdiHelp, false],
 ]
 
@@ -74,7 +76,7 @@ class GrampsjsSettingsMenu extends GrampsjsAppStateMixin(LitElement) {
           anchor-corner="start-end"
           menu-corner="end-end"
         >
-        ${menuItems.map(menuItem => this._menuItem(...menuItem))}
+          ${menuItems.map(menuItem => this._menuItem(...menuItem))}
           <md-divider role="separator" tabindex="-1"></md-divider>
           <md-menu-item class="red"
             @click="${() => this.appState.signout()}"
@@ -86,12 +88,19 @@ class GrampsjsSettingsMenu extends GrampsjsAppStateMixin(LitElement) {
               'var(--icon-color)'
             )}</md-icon>
           </md-menu-item>
+        </md-menu>
       </div>
     `
   }
 
   _menuItem(title, url, icon, needsAdminPermission) {
     if (needsAdminPermission && !this.appState.permissions.canManageUsers) {
+      return ''
+    }
+    if (
+      title === 'Researcher Information' &&
+      this.appState.frontendConfig.hideResearcherDetails
+    ) {
       return ''
     }
     return html`

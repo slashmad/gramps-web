@@ -9,6 +9,7 @@ import '../components/GrampsjsDeleteAll.js'
 import '../components/GrampsjsRelogin.js'
 import '../components/GrampsjsTaskProgressIndicator.js'
 import '../components/GrampsjsTreeQuotas.js'
+import '../components/GrampsjsConfigSettings.js'
 
 import {fireEvent, clickKeyHandler} from '../util.js'
 import '@material/mwc-button'
@@ -92,6 +93,17 @@ export class GrampsjsViewAdminSettings extends GrampsjsView {
 
   renderContent() {
     return html`
+      <h3>${this._('Server configuration')}</h3>
+      ${this.appState.permissions.canViewSettings
+        ? html`<grampsjs-config-settings
+            .appState="${this.appState}"
+          ></grampsjs-config-settings>`
+        : html`<p class="alert warn">
+            ${this._(
+              'You do not have permission to view or edit server configuration.'
+            )}
+          </p>`}
+
       <h3>${this._('Usage quotas')}</h3>
 
       <grampsjs-tree-quotas .appState="${this.appState}"></grampsjs-tree-quotas>

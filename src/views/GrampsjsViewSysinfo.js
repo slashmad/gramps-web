@@ -14,7 +14,7 @@ export class GrampsjsViewSysinfo extends GrampsjsView {
       <h3>${this._('Tree Information')}</h3>
       <p class="small">ID: <span class="monospace">${
         this.appState.auth.claims.tree
-      }</a></p>
+      }</span></p>
 
       `
   }

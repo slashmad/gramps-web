@@ -22,6 +22,8 @@ export function getInitialAppState() {
       canEdit: false,
       canViewPrivate: false,
       canManageUsers: false,
+      canViewSettings: false,
+      canEditSettings: false,
       canUseChat: false,
       canUpgradeTree: false,
     },
@@ -50,12 +52,14 @@ export function getInitialAppState() {
 }
 
 export function appStateUpdatePermissions(appState) {
-  const rawPermissions = getPermissions()
+  const rawPermissions = getPermissions() || []
   const permissions = {
     canAdd: rawPermissions.includes('AddObject'),
     canEdit: rawPermissions.includes('EditObject'),
     canViewPrivate: rawPermissions.includes('ViewPrivate'),
     canManageUsers: rawPermissions.includes('EditOtherUser'),
+    canViewSettings: rawPermissions.includes('ViewSettings'),
+    canEditSettings: rawPermissions.includes('EditSettings'),
     canUseChat: rawPermissions.includes('UseChat'),
     canUpgradeTree: rawPermissions.includes('UpgradeSchema'),
   }
