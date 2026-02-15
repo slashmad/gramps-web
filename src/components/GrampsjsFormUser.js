@@ -132,6 +132,20 @@ class GrampsjsFormUser extends GrampsjsAppStateMixin(LitElement) {
             )}
         </mwc-select>
       </p>
+      ${!this.newUser
+        ? html`
+            <p>
+              <grampsjs-form-string
+                @formdata:changed="${this._handleFormData}"
+                fullwidth
+                id="new_password"
+                type="password"
+                label="${this._('New password')}"
+                value="${this.data.new_password || ''}"
+              ></grampsjs-form-string>
+            </p>
+          `
+        : ''}
     `
   }
 

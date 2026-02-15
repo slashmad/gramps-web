@@ -87,13 +87,30 @@ export class GrampsjsViewUserManagement extends GrampsjsView {
     this._fetchUserData()
   }
 
-  _handleUserChanged(e) {
+  async _handleUserChanged(e) {
     const data = e.detail
-    this._updateUser(e.detail.name, {
+    const username = e.detail.name
+    const updateData = await this._updateUser(username, {
       role: data.role,
       email: data.email,
       full_name: data.full_name,
     })
+    if ('error' in updateData) {
+      this.error = true
+      this._errorMessage = updateData.error
+      return
+    }
+    const newPassword = (data.new_password || '').trim()
+    if (newPassword) {
+      const passwordData = await this._replaceUserPassword(username, newPassword)
+      if ('error' in passwordData) {
+        this.error = true
+        this._errorMessage = passwordData.error
+        return
+      }
+    }
+    this.error = false
+    this._fetchUserData()
   }
 
   _handleUserAdded(e) {
@@ -122,14 +139,12 @@ export class GrampsjsViewUserManagement extends GrampsjsView {
   }
 
   _updateUser(username, payload) {
-    this.appState.apiPut(`/api/users/${username}/`, payload).then(data => {
-      if ('error' in data) {
-        this.error = true
-        this._errorMessage = data.error
-      } else {
-        this.error = false
-        this._fetchUserData()
-      }
+    return this.appState.apiPut(`/api/users/${username}/`, payload)
+  }
+
+  _replaceUserPassword(username, newPassword) {
+    return this.appState.apiPost(`/api/users/${username}/password/change`, {
+      new_password: newPassword,
     })
   }
 

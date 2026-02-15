@@ -7,6 +7,7 @@
 > - Added per-setting **Save** and **Reset** actions and status for DB override/default usage.
 > - Added frontend permissions for `ViewSettings` and `EditSettings`.
 > - Fixed settings menu consistency (`Researcher Information` entry) and a system info markup bug.
+> - In **User Management**, owner/admin can now set a new password for any user directly in the edit dialog.
 >
 > Full “control everything via web UI” requires the matching backend update in
 > **gramps-web-api** (expanded `/api/config` handling + runtime override application).
