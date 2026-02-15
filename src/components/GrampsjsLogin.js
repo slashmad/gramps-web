@@ -24,18 +24,61 @@ class GrampsjsLogin extends GrampsjsAppStateMixin(LitElement) {
     return [
       sharedStyles,
       css`
+        #login-layout {
+          min-height: 100%;
+          display: flex;
+          align-items: flex-start;
+          justify-content: center;
+          gap: clamp(0.8rem, 2.2vw, 2rem);
+          padding: 1.5rem 1rem 2rem;
+          box-sizing: border-box;
+        }
+
         #login-container {
-          margin: auto;
-          height: 100%;
+          margin: 0;
           width: 100%;
           max-width: 25em;
+          flex: 0 1 25em;
+        }
+
+        .login-side-image {
+          display: none;
+          flex: 0 0 var(--login-image-width, 280px);
+          max-width: var(--login-image-width, 280px);
+          position: relative;
+          top: min(20vh, 220px);
+        }
+
+        #login-layout.with-images .login-side-image {
+          display: block;
+        }
+
+        .login-side-image .frame {
+          width: 100%;
+          aspect-ratio: var(--login-image-aspect-ratio, 3 / 4);
+          border-radius: 14px;
+          overflow: hidden;
+          border: 1px solid var(--grampsjs-body-font-color-15);
+          background: var(--grampsjs-body-font-color-05);
+        }
+
+        .login-side-image img {
+          width: 100%;
+          height: 100%;
+          object-fit: var(--login-image-object-fit, cover);
+          display: block;
+        }
+
+        .login-side-image.placeholder {
+          opacity: 0;
+          pointer-events: none;
         }
 
         #login-form {
           margin: auto;
           max-width: 90vw;
           position: relative;
-          top: 20vh;
+          top: min(20vh, 220px);
         }
 
         #login-form mwc-textfield {
@@ -125,6 +168,22 @@ class GrampsjsLogin extends GrampsjsAppStateMixin(LitElement) {
           margin-top: 2em;
           margin-bottom: 2em;
         }
+
+        @media (max-width: 1180px) {
+          .login-side-image {
+            display: none !important;
+          }
+        }
+
+        @media (max-width: 720px) {
+          #login-layout {
+            padding: 1rem;
+          }
+
+          #login-form {
+            top: min(14vh, 140px);
+          }
+        }
       `,
     ]
   }
@@ -136,6 +195,7 @@ class GrampsjsLogin extends GrampsjsAppStateMixin(LitElement) {
       credentials: {type: Object},
       tree: {type: String},
       oidcConfig: {type: Object},
+      loginCustomization: {type: Object},
     }
   }
 
@@ -146,6 +206,7 @@ class GrampsjsLogin extends GrampsjsAppStateMixin(LitElement) {
     this.credentials = {}
     this.tree = ''
     this.oidcConfig = {}
+    this.loginCustomization = {}
   }
 
   async connectedCallback() {
@@ -153,6 +214,7 @@ class GrampsjsLogin extends GrampsjsAppStateMixin(LitElement) {
     const config = await apiGetOIDCConfig()
     if (!config.error) {
       this.oidcConfig = config
+      this.loginCustomization = config.login_customization || {}
 
       if (
         config.enabled &&
@@ -178,89 +240,126 @@ class GrampsjsLogin extends GrampsjsAppStateMixin(LitElement) {
   _renderLogin() {
     const localAuthDisabled =
       this.oidcConfig?.enabled && this.oidcConfig?.disable_local_auth
+    const title = this._loginTitle
+    const leftImageUrl = this._loginImageLeftUrl
+    const rightImageUrl = this._loginImageRightUrl
+    const showImageColumns = !!(leftImageUrl || rightImageUrl)
+    const layoutStyle = `
+      --login-image-width: ${this._loginImageWidth};
+      --login-image-aspect-ratio: ${this._loginImageAspectRatio};
+      --login-image-object-fit: ${this._loginImageObjectFit};
+    `
 
     return html`
-      <div id="login-container">
-        <form id="login-form" @keydown="${this._handleLoginKey}">
-          <h2>${this._('Log in to Gramps Web')}</h2>
-          ${localAuthDisabled
-            ? ''
-            : html`
-                <md-outlined-text-field
-                  id="username"
-                  label="${this._('Username')}"
-                  @input="${this._credChanged}"
-                  @change="${this._credChanged}"
-                  value="${this.credentials.username || ''}"
-                ></md-outlined-text-field>
-                <md-outlined-text-field
-                  id="password"
-                  label="${this._('Password')}"
-                  type="password"
-                  @input="${this._credChanged}"
-                  @change="${this._credChanged}"
-                  value="${this.credentials.password || ''}"
-                ></md-outlined-text-field>
-                <div class="button-container">
-                  ${window.grampsjsConfig.hideRegisterLink
-                    ? ''
-                    : html`
-                        <md-outlined-button
-                          @click="${() => this._handleNav('register')}"
-                        >
-                          ${this._('Register new account')}
-                        </md-outlined-button>
-                      `}
-                  <md-filled-button type="submit" @click="${this._submitLogin}">
-                    ${this._('login')}
-                  </md-filled-button>
-                </div>
-                <mwc-circular-progress
-                  indeterminate
-                  density="-7"
-                  closed
-                  id="login-progress"
-                  style="display:none; margin-top: 0.5em;"
-                >
-                </mwc-circular-progress>
-                <p class="forgot-password">
-                  <span
-                    class="link"
-                    @click="${() => {
-                      this.resetpw = true
-                    }}"
-                    >${this._('Lost password?')}</span
+      <div
+        id="login-layout"
+        class="${showImageColumns ? 'with-images' : ''}"
+        style="${layoutStyle}"
+      >
+        ${this._renderLoginSideImage(leftImageUrl, showImageColumns)}
+        <div id="login-container">
+          <form id="login-form" @keydown="${this._handleLoginKey}">
+            <h2>${title}</h2>
+            ${localAuthDisabled
+              ? ''
+              : html`
+                  <md-outlined-text-field
+                    id="username"
+                    label="${this._('Username')}"
+                    @input="${this._credChanged}"
+                    @change="${this._credChanged}"
+                    value="${this.credentials.username || ''}"
+                  ></md-outlined-text-field>
+                  <md-outlined-text-field
+                    id="password"
+                    label="${this._('Password')}"
+                    type="password"
+                    @input="${this._credChanged}"
+                    @change="${this._credChanged}"
+                    value="${this.credentials.password || ''}"
+                  ></md-outlined-text-field>
+                  <div class="button-container">
+                    ${window.grampsjsConfig.hideRegisterLink
+                      ? ''
+                      : html`
+                          <md-outlined-button
+                            @click="${() => this._handleNav('register')}"
+                          >
+                            ${this._('Register new account')}
+                          </md-outlined-button>
+                        `}
+                    <md-filled-button
+                      type="submit"
+                      @click="${this._submitLogin}"
+                    >
+                      ${this._('login')}
+                    </md-filled-button>
+                  </div>
+                  <mwc-circular-progress
+                    indeterminate
+                    density="-7"
+                    closed
+                    id="login-progress"
+                    style="display:none; margin-top: 0.5em;"
                   >
-                </p>
-              `}
-          ${this.oidcConfig?.enabled &&
-          this.oidcConfig?.providers &&
-          !localAuthDisabled
-            ? html`<hr />`
-            : ''}
-          ${this.oidcConfig?.enabled && this.oidcConfig?.providers
-            ? this.oidcConfig.providers.map(
-                provider => html`
-                  <grampsjs-oidc-button
-                    .provider="${provider.id}"
-                    .providerName="${provider.name}"
-                    .onClick="${() => this._submitOIDCLogin(provider.id)}"
-                    .buttonText="${this._getOIDCButtonText(
-                      provider.id,
-                      provider.name
-                    )}"
-                    .signingInText="${this._('Signing in...')}"
-                  ></grampsjs-oidc-button>
-                `
-              )
-            : ''}
-        </form>
-        <grampsjs-password-manager-polyfill
-          .credentials=${this.credentials}
-          @form-submitted=${this._submitLogin}
-          @value-changed=${this._loginFormChanged}
-        ></grampsjs-password-manager-polyfill>
+                  </mwc-circular-progress>
+                  <p class="forgot-password">
+                    <span
+                      class="link"
+                      @click="${() => {
+                        this.resetpw = true
+                      }}"
+                      >${this._('Lost password?')}</span
+                    >
+                  </p>
+                `}
+            ${this.oidcConfig?.enabled &&
+            this.oidcConfig?.providers &&
+            !localAuthDisabled
+              ? html`<hr />`
+              : ''}
+            ${this.oidcConfig?.enabled && this.oidcConfig?.providers
+              ? this.oidcConfig.providers.map(
+                  provider => html`
+                    <grampsjs-oidc-button
+                      .provider="${provider.id}"
+                      .providerName="${provider.name}"
+                      .onClick="${() => this._submitOIDCLogin(provider.id)}"
+                      .buttonText="${this._getOIDCButtonText(
+                        provider.id,
+                        provider.name
+                      )}"
+                      .signingInText="${this._('Signing in...')}"
+                    ></grampsjs-oidc-button>
+                  `
+                )
+              : ''}
+          </form>
+          <grampsjs-password-manager-polyfill
+            .credentials=${this.credentials}
+            @form-submitted=${this._submitLogin}
+            @value-changed=${this._loginFormChanged}
+          ></grampsjs-password-manager-polyfill>
+        </div>
+        ${this._renderLoginSideImage(rightImageUrl, showImageColumns)}
       </div>
+    `
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  _renderLoginSideImage(url, showPlaceholder = false) {
+    if (!url) {
+      if (!showPlaceholder) {
+        return ''
+      }
+      return html`<aside class="login-side-image placeholder"></aside>`
+    }
+    return html`
+      <aside class="login-side-image has-image">
+        <div class="frame">
+          <img src="${url}" alt="" />
+        </div>
+      </aside>
     `
   }
 
@@ -283,6 +382,67 @@ class GrampsjsLogin extends GrampsjsAppStateMixin(LitElement) {
 
   _credChanged(e) {
     this.credentials = {...this.credentials, [e.target.id]: e.target.value}
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  _resolveLoginSetting(value, fallback = '') {
+    if (value === undefined || value === null) {
+      return fallback
+    }
+    const parsed = `${value}`.trim()
+    return parsed === '' ? fallback : parsed
+  }
+
+  get _frontendLoginConfig() {
+    return this.appState?.frontendConfig || window.grampsjsConfig || {}
+  }
+
+  get _loginTitle() {
+    return (
+      this._resolveLoginSetting(this.loginCustomization?.title) ||
+      this._resolveLoginSetting(this._frontendLoginConfig.loginTitle) ||
+      this._('Log in to Gramps Web')
+    )
+  }
+
+  get _loginImageLeftUrl() {
+    return (
+      this._resolveLoginSetting(this.loginCustomization?.left_image_url) ||
+      this._resolveLoginSetting(this._frontendLoginConfig.loginLeftImageUrl)
+    )
+  }
+
+  get _loginImageRightUrl() {
+    return (
+      this._resolveLoginSetting(this.loginCustomization?.right_image_url) ||
+      this._resolveLoginSetting(this._frontendLoginConfig.loginRightImageUrl)
+    )
+  }
+
+  get _loginImageWidth() {
+    return (
+      this._resolveLoginSetting(this.loginCustomization?.image_width) ||
+      this._resolveLoginSetting(this._frontendLoginConfig.loginImageWidth) ||
+      '280px'
+    )
+  }
+
+  get _loginImageAspectRatio() {
+    return (
+      this._resolveLoginSetting(this.loginCustomization?.image_aspect_ratio) ||
+      this._resolveLoginSetting(
+        this._frontendLoginConfig.loginImageAspectRatio
+      ) ||
+      '3 / 4'
+    )
+  }
+
+  get _loginImageObjectFit() {
+    return (
+      this._resolveLoginSetting(this.loginCustomization?.image_object_fit) ||
+      this._resolveLoginSetting(this._frontendLoginConfig.loginImageObjectFit) ||
+      'cover'
+    )
   }
 
   _renderResetPw() {

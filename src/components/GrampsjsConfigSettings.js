@@ -9,6 +9,12 @@ import {fireEvent} from '../util.js'
 const FIELD_LABELS = {
   BASE_URL: 'Gramps Web base URL',
   FRONTEND_URL: 'Frontend URL',
+  LOGIN_PAGE_TITLE: 'Login page title',
+  LOGIN_PAGE_LEFT_IMAGE_URL: 'Login page left image URL',
+  LOGIN_PAGE_RIGHT_IMAGE_URL: 'Login page right image URL',
+  LOGIN_PAGE_IMAGE_WIDTH: 'Login page image width',
+  LOGIN_PAGE_IMAGE_ASPECT_RATIO: 'Login page image aspect ratio',
+  LOGIN_PAGE_IMAGE_OBJECT_FIT: 'Login page image fit mode',
   DEFAULT_FROM_EMAIL: 'From address',
   EMAIL_HOST: 'SMTP host',
   EMAIL_PORT: 'SMTP port',
@@ -28,6 +34,17 @@ const FIELD_LABELS = {
 const FIELD_DESCRIPTIONS = {
   BASE_URL: 'Used in generated links and e-mails to point users to your server.',
   FRONTEND_URL: 'Public URL to the web UI.',
+  LOGIN_PAGE_TITLE: 'Title shown above the authentication form.',
+  LOGIN_PAGE_LEFT_IMAGE_URL:
+    'Optional image URL shown left of the login form on wider screens.',
+  LOGIN_PAGE_RIGHT_IMAGE_URL:
+    'Optional image URL shown right of the login form on wider screens.',
+  LOGIN_PAGE_IMAGE_WIDTH:
+    'CSS width for side images (for example 280px, 22vw, or min(22vw, 320px)).',
+  LOGIN_PAGE_IMAGE_ASPECT_RATIO:
+    'CSS aspect-ratio value for side images (for example 3/4 or 16/9).',
+  LOGIN_PAGE_IMAGE_OBJECT_FIT:
+    'Image fit mode inside frames: cover, contain, fill, none, or scale-down.',
   DEFAULT_FROM_EMAIL: 'Sender address shown in outgoing e-mails.',
   EMAIL_HOST: 'SMTP server hostname.',
   EMAIL_PORT: 'SMTP server port.',
@@ -63,6 +80,12 @@ const FIELD_DESCRIPTIONS = {
 const PRIORITY_KEYS = [
   'BASE_URL',
   'FRONTEND_URL',
+  'LOGIN_PAGE_TITLE',
+  'LOGIN_PAGE_LEFT_IMAGE_URL',
+  'LOGIN_PAGE_RIGHT_IMAGE_URL',
+  'LOGIN_PAGE_IMAGE_WIDTH',
+  'LOGIN_PAGE_IMAGE_ASPECT_RATIO',
+  'LOGIN_PAGE_IMAGE_OBJECT_FIT',
   'DEFAULT_FROM_EMAIL',
   'EMAIL_HOST',
   'EMAIL_PORT',
@@ -90,6 +113,11 @@ const CONFIG_GROUPS = [
     matches: key =>
       ['BASE_URL', 'FRONTEND_URL', 'STATIC_PATH'].includes(key) ||
       key.startsWith('CORS_'),
+  },
+  {
+    id: 'login',
+    label: 'Login / Landing Page',
+    matches: key => key.startsWith('LOGIN_PAGE_'),
   },
   {
     id: 'auth',
@@ -563,6 +591,9 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     if (key.startsWith('OIDC_')) {
       return 'OpenID Connect login/provider setting.'
     }
+    if (key.startsWith('LOGIN_PAGE_')) {
+      return 'Login/landing page presentation setting.'
+    }
     if (key.startsWith('EMAIL_')) {
       return 'Outgoing e-mail (SMTP) setting.'
     }
@@ -638,7 +669,7 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     if (this._filter.trim()) {
       return true
     }
-    return ['email', 'urls'].includes(groupId)
+    return ['email', 'urls', 'login'].includes(groupId)
   }
 
   _renderSaveStatus(key) {

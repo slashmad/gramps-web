@@ -14,6 +14,7 @@ import {
   mdiLogout,
   mdiInformation,
   mdiWrench,
+  mdiServer,
   mdiAccountMultiple,
   mdiAccountCog,
   mdiAccountTie,
@@ -27,6 +28,7 @@ import {clickKeyHandler} from '../util.js'
 const menuItems = [
   ['User settings', '/settings/user', mdiAccountCog, false],
   ['Administration', '/settings/administration', mdiWrench, true],
+  ['Server configuration', '/settings/server', mdiServer, false],
   ['Manage users', '/settings/users', mdiAccountMultiple, true],
   ['System Information', '/settings/info', mdiInformation, false],
   ['Researcher Information', '/settings/researcher', mdiAccountTie, false],
@@ -95,6 +97,9 @@ class GrampsjsSettingsMenu extends GrampsjsAppStateMixin(LitElement) {
 
   _menuItem(title, url, icon, needsAdminPermission) {
     if (needsAdminPermission && !this.appState.permissions.canManageUsers) {
+      return ''
+    }
+    if (title === 'Server configuration' && !this.appState.permissions.canViewSettings) {
       return ''
     }
     if (
