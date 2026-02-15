@@ -34,6 +34,67 @@ const TYPE_HINTS = {
   duration: 'seconds or HH:MM:SS',
 }
 
+const CONFIG_GROUPS = [
+  {
+    id: 'email',
+    label: 'Email / SMTP',
+    matches: key => key === 'DEFAULT_FROM_EMAIL' || key.startsWith('EMAIL_'),
+  },
+  {
+    id: 'urls',
+    label: 'URLs / Frontend',
+    matches: key =>
+      ['BASE_URL', 'FRONTEND_URL', 'STATIC_PATH'].includes(key) ||
+      key.startsWith('CORS_'),
+  },
+  {
+    id: 'auth',
+    label: 'Authentication / Security',
+    matches: key =>
+      ['SECRET_KEY', 'REGISTRATION_DISABLED'].includes(key) ||
+      key.startsWith('JWT_') ||
+      key.startsWith('OIDC_'),
+  },
+  {
+    id: 'tree',
+    label: 'Tree / Database / Media',
+    matches: key =>
+      [
+        'TREE',
+        'USER_DB_URI',
+        'NEW_DB_BACKEND',
+        'MEDIA_BASE_DIR',
+        'MEDIA_PREFIX_TREE',
+        'IGNORE_DB_LOCK',
+      ].includes(key) || key.startsWith('POSTGRES_'),
+  },
+  {
+    id: 'searchAi',
+    label: 'Search / AI',
+    matches: key =>
+      key.startsWith('SEARCH_') ||
+      key.startsWith('LLM_') ||
+      key.startsWith('VECTOR_'),
+  },
+  {
+    id: 'runtime',
+    label: 'Runtime / Cache / Performance',
+    matches: key =>
+      key.includes('CACHE') ||
+      key.startsWith('RATE_LIMIT_') ||
+      key === 'LOG_LEVEL' ||
+      key === 'DISABLE_TELEMETRY' ||
+      key === 'REPORT_DIR' ||
+      key === 'EXPORT_DIR' ||
+      key.startsWith('CELERY_'),
+  },
+]
+
+const OTHER_GROUP = {
+  id: 'other',
+  label: 'Other settings',
+}
+
 class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
   static get styles() {
     return [
@@ -43,9 +104,43 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
           display: block;
         }
 
+        .group {
+          border: 1px solid var(--grampsjs-body-font-color-10);
+          border-radius: 8px;
+          margin-bottom: 0.8em;
+          background: var(--grampsjs-body-background, transparent);
+        }
+
+        summary {
+          cursor: pointer;
+          list-style: none;
+          padding: 0.7em 0.9em;
+          font-weight: 500;
+          border-bottom: 1px solid var(--grampsjs-body-font-color-10);
+        }
+
+        summary::-webkit-details-marker {
+          display: none;
+        }
+
+        summary::before {
+          content: '▸';
+          margin-right: 0.55em;
+          display: inline-block;
+          transition: transform 0.15s ease;
+        }
+
+        details[open] > summary::before {
+          transform: rotate(90deg);
+        }
+
         table {
           width: 100%;
           border-collapse: collapse;
+        }
+
+        .group table {
+          margin: 0;
         }
 
         th,
@@ -84,6 +179,34 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
           color: var(--grampsjs-body-font-color-60);
         }
 
+        .save-status {
+          margin-top: 0.35em;
+          font-size: 13px;
+          line-height: 1.3;
+        }
+
+        .save-status.ok {
+          color: #1b7f3a;
+        }
+
+        .save-status.error {
+          color: #b00020;
+        }
+
+        .summary {
+          margin: 0 0 0.9em 0;
+          padding: 0.75em 0.9em;
+          border: 1px solid var(--grampsjs-body-font-color-15);
+          border-radius: 8px;
+          background: var(--grampsjs-body-background, transparent);
+          font-size: 14px;
+          color: var(--grampsjs-body-font-color-75);
+        }
+
+        .summary p {
+          margin: 0.3em 0;
+        }
+
         mwc-textfield {
           width: 100%;
         }
@@ -108,6 +231,7 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
       _formData: {type: Object},
       _busyKey: {type: String},
       _filter: {type: String},
+      _saveStatus: {type: Object},
     }
   }
 
@@ -119,6 +243,7 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     this._formData = {}
     this._busyKey = ''
     this._filter = ''
+    this._saveStatus = {}
   }
 
   connectedCallback() {
@@ -139,6 +264,23 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
           'These values are stored in the database and override server configuration values.'
         )}
       </p>
+      <div class="summary">
+        <p>
+          ${this._(
+            'Save writes a database override. Reset removes the override and returns to server/default value.'
+          )}
+        </p>
+        <p>
+          ${this._(
+            'Status: OK means the last save/reset succeeded. Not saved means the last action failed.'
+          )}
+        </p>
+        <p>
+          ${this._(
+            'Most settings apply live. Some startup/runtime settings may still require an app restart.'
+          )}
+        </p>
+      </div>
       <mwc-textfield
         class="filter"
         outlined
@@ -149,55 +291,63 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
           this._filter = e.target.value
         }}"
       ></mwc-textfield>
-      <table>
-        ${this._visibleKeys.map(
-          key => html`
-            <tr>
-              <th>
-                <div>${this._(this._label(key))}</div>
-                <div class="key">${key}</div>
-              </th>
-              <td class="value">
-                <mwc-textfield
-                  outlined
-                  ?disabled=${this._isBusy(key) ||
-                  !this.appState.permissions.canEditSettings}
-                  type="${this._inputType(key)}"
-                  .value="${this._formValue(key)}"
-                  placeholder="${TYPE_HINTS[this._type(key)] || ''}"
-                  @input="${e => this._handleInput(key, e.target.value)}"
-                ></mwc-textfield>
-                <div class="status">
-                  ${this._isOverridden(key)
-                    ? this._('Overridden in database')
-                    : this._('Using server/default value')}
-                </div>
-              </td>
-              <td class="actions">
-                <mwc-button
-                  outlined
-                  ?disabled=${!this.appState.permissions.canEditSettings ||
-                  !this._hasChanged(key) ||
-                  this._isBusy()}
-                  @click="${() => this._save(key)}"
-                  >${this._('_Save')}</mwc-button
-                >
-                <mwc-button
-                  ?disabled=${!this.appState.permissions.canEditSettings ||
-                  !this._isOverridden(key) ||
-                  this._isBusy()}
-                  @click="${() => this._reset(key)}"
-                  >${this._('Reset')}</mwc-button
-                >
-              </td>
-            </tr>
-          `
-        )}
-      </table>
+      ${this._groupedVisibleKeys.map(
+        group => html`
+          <details class="group" ?open="${this._isGroupOpen(group.id)}">
+            <summary>${this._(group.label)} (${group.keys.length})</summary>
+            <table>
+              ${group.keys.map(
+                key => html`
+                  <tr>
+                    <th>
+                      <div>${this._(this._label(key))}</div>
+                      <div class="key">${key}</div>
+                    </th>
+                    <td class="value">
+                      <mwc-textfield
+                        outlined
+                        ?disabled=${this._isBusy(key) ||
+                        !this.appState.permissions.canEditSettings}
+                        type="${this._inputType(key)}"
+                        .value="${this._formValue(key)}"
+                        placeholder="${TYPE_HINTS[this._type(key)] || ''}"
+                        @input="${e => this._handleInput(key, e.target.value)}"
+                      ></mwc-textfield>
+                      <div class="status">
+                        ${this._isOverridden(key)
+                          ? this._('Overridden in database')
+                          : this._('Using server/default value')}
+                      </div>
+                      ${this._renderSaveStatus(key)}
+                    </td>
+                    <td class="actions">
+                      <mwc-button
+                        outlined
+                        ?disabled=${!this.appState.permissions.canEditSettings ||
+                        !this._hasChanged(key) ||
+                        this._isBusy()}
+                        @click="${() => this._save(key)}"
+                        >${this._('_Save')}</mwc-button
+                      >
+                      <mwc-button
+                        ?disabled=${!this.appState.permissions.canEditSettings ||
+                        !this._isOverridden(key) ||
+                        this._isBusy()}
+                        @click="${() => this._reset(key)}"
+                        >${this._('Reset')}</mwc-button
+                      >
+                    </td>
+                  </tr>
+                `
+              )}
+            </table>
+          </details>
+        `
+      )}
     `
   }
 
-  get _visibleKeys() {
+  get _filteredKeys() {
     const q = this._filter.trim().toLowerCase()
     if (!q) {
       return this._allKeys
@@ -210,18 +360,26 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
 
   get _allKeys() {
     const keySet = new Set([...PRIORITY_KEYS, ...Object.keys(this._configData)])
-    const keys = [...keySet]
-    keys.sort((a, b) => {
-      const ia = PRIORITY_KEYS.indexOf(a)
-      const ib = PRIORITY_KEYS.indexOf(b)
-      if (ia !== -1 || ib !== -1) {
-        if (ia === -1) return 1
-        if (ib === -1) return -1
-        return ia - ib
-      }
-      return a.localeCompare(b)
+    return [...keySet]
+  }
+
+  get _groupedVisibleKeys() {
+    const groups = CONFIG_GROUPS.map(group => ({...group, keys: []}))
+    const fallback = {...OTHER_GROUP, keys: []}
+    const map = new Map(groups.map(group => [group.id, group]))
+    map.set(fallback.id, fallback)
+
+    this._filteredKeys.forEach(key => {
+      const group = CONFIG_GROUPS.find(def => def.matches(key))
+      map.get(group?.id || OTHER_GROUP.id).keys.push(key)
     })
-    return keys
+
+    return [...groups, fallback]
+      .map(group => ({
+        ...group,
+        keys: group.keys.sort((a, b) => b.localeCompare(a)),
+      }))
+      .filter(group => group.keys.length > 0)
   }
 
   _label(key) {
@@ -273,7 +431,56 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     return this._busyKey === key
   }
 
+  _isGroupOpen(groupId) {
+    if (this._filter.trim()) {
+      return true
+    }
+    return ['email', 'urls'].includes(groupId)
+  }
+
+  _renderSaveStatus(key) {
+    const status = this._saveStatus[key]
+    if (!status) {
+      return ''
+    }
+    const cls = status.ok ? 'ok' : 'error'
+    return html`<div class="save-status ${cls}">
+      ${status.ok ? this._('OK') : this._('Not saved')}
+      ${status.message ? html`<div>${status.message}</div>` : ''}
+    </div>`
+  }
+
+  _setSaveStatus(key, ok, message = '') {
+    this._saveStatus = {
+      ...this._saveStatus,
+      [key]: {ok, message},
+    }
+  }
+
+  _clearSaveStatus(key) {
+    if (!Object.prototype.hasOwnProperty.call(this._saveStatus, key)) {
+      return
+    }
+    const copy = {...this._saveStatus}
+    delete copy[key]
+    this._saveStatus = copy
+  }
+
+  static _errorText(error) {
+    if (!error) {
+      return ''
+    }
+    if (typeof error === 'string') {
+      return error
+    }
+    if (typeof error === 'object' && 'message' in error) {
+      return error.message
+    }
+    return `${error}`
+  }
+
   _handleInput(key, value) {
+    this._clearSaveStatus(key)
     this._formData = {...this._formData, [key]: value}
   }
 
@@ -338,10 +545,16 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     })
     this._busyKey = ''
     if ('error' in res) {
+      this._setSaveStatus(
+        key,
+        false,
+        this.constructor._errorText(res.error)
+      )
       fireEvent(this, 'grampsjs:error', {message: res.error})
       return
     }
     await this._loadData()
+    this._setSaveStatus(key, true, '')
     fireEvent(this, 'grampsjs:notification', {message: this._('Saved')})
   }
 
@@ -352,10 +565,16 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     })
     this._busyKey = ''
     if ('error' in res) {
+      this._setSaveStatus(
+        key,
+        false,
+        this.constructor._errorText(res.error)
+      )
       fireEvent(this, 'grampsjs:error', {message: res.error})
       return
     }
     await this._loadData()
+    this._setSaveStatus(key, true, '')
     fireEvent(this, 'grampsjs:notification', {
       message: this._('Reset to server/default value'),
     })
