@@ -38,6 +38,7 @@ import '../views/GrampsjsViewSettingsUser.js'
 import '../views/GrampsjsViewSysinfo.js'
 import '../views/GrampsjsViewResearcher.js'
 import '../views/GrampsjsViewAdminSettings.js'
+import '../views/GrampsjsViewServerSettings.js'
 import '../views/GrampsjsViewUserManagement.js'
 import '../views/GrampsjsViewRecent.js'
 import '../views/GrampsjsViewRevisions.js'
@@ -300,6 +301,12 @@ class GrampsjsPages extends GrampsjsAppStateMixin(LitElement) {
         (this.appState.path.pageId === 'user' || !this.appState.path.pageId)}
         .appState="${this.appState}"
       ></grampsjs-view-settings-user>
+      <grampsjs-view-server-settings
+        class="page"
+        ?active=${this.appState.path.page === 'settings' &&
+        this.appState.path.pageId === 'server'}
+        .appState="${this.appState}"
+      ></grampsjs-view-server-settings>
       ${this.appState.permissions.canManageUsers
         ? html`
             <grampsjs-view-admin-settings

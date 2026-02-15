@@ -20,6 +20,7 @@ const tabs = {
   settings: {
     user: 'User settings',
     administration: 'Administration',
+    server: 'Server configuration',
     users: 'Manage users',
     info: 'System Information',
     researcher: 'Researcher Information',
@@ -91,6 +92,8 @@ class GrampsjsTabBar extends GrampsjsAppStateMixin(LitElement) {
         return this.appState.permissions.canManageUsers
       case 'users':
         return this.appState.permissions.canManageUsers
+      case 'server':
+        return this.appState.permissions.canViewSettings
       case 'user':
         return true
       case 'info':
