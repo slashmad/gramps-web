@@ -16,6 +16,41 @@ const FIELD_LABELS = {
   EMAIL_HOST_PASSWORD: 'SMTP password',
 }
 
+const FIELD_DESCRIPTIONS = {
+  BASE_URL: 'Used in generated links and e-mails to point users to your server.',
+  FRONTEND_URL: 'Public URL to the web UI.',
+  DEFAULT_FROM_EMAIL: 'Sender address shown in outgoing e-mails.',
+  EMAIL_HOST: 'SMTP server hostname.',
+  EMAIL_PORT: 'SMTP server port.',
+  EMAIL_HOST_USER: 'SMTP username used for authentication.',
+  EMAIL_HOST_PASSWORD: 'SMTP password used for authentication.',
+  EMAIL_USE_SSL: 'Use implicit SSL/TLS for SMTP connection.',
+  EMAIL_USE_STARTTLS: 'Use STARTTLS upgrade on SMTP connection.',
+  EMAIL_USE_TLS:
+    'Legacy SMTP TLS flag. Prefer EMAIL_USE_SSL or EMAIL_USE_STARTTLS.',
+  TREE: 'Tree mode. Use a fixed tree id or "*" for multi-tree mode.',
+  USER_DB_URI: 'Connection string for the user/config database.',
+  SECRET_KEY: 'Server secret used for cryptographic signing.',
+  STATIC_PATH: 'Filesystem path for served frontend static files.',
+  REGISTRATION_DISABLED: 'Disable public user registration endpoints.',
+  LOG_LEVEL: 'Server logging verbosity.',
+  MEDIA_BASE_DIR: 'Base directory where media files are stored.',
+  MEDIA_PREFIX_TREE: 'Prefix media paths with tree id in multi-tree setups.',
+  SEARCH_INDEX_DB_URI: 'Location/URI of the full-text search index database.',
+  SEARCH_INDEX_DIR: 'Deprecated legacy search index directory setting.',
+  REQUEST_CACHE_CONFIG: 'Request-level cache backend and limits.',
+  THUMBNAIL_CACHE_CONFIG: 'Thumbnail cache backend and limits.',
+  PERSISTENT_CACHE_CONFIG: 'Persistent cache backend and limits.',
+  REPORT_DIR: 'Directory for temporary/generated reports.',
+  EXPORT_DIR: 'Directory for exported files.',
+  DISABLE_TELEMETRY: 'Disable anonymous telemetry sending.',
+  LLM_BASE_URL: 'Base URL for the configured LLM provider endpoint.',
+  LLM_MODEL: 'LLM model name used for AI chat.',
+  LLM_MAX_CONTEXT_LENGTH: 'Maximum context length for AI prompts.',
+  LLM_SYSTEM_PROMPT: 'System prompt prepended to AI chat requests.',
+  VECTOR_EMBEDDING_MODEL: 'Embedding model name for semantic search.',
+}
+
 const PRIORITY_KEYS = [
   'BASE_URL',
   'FRONTEND_URL',
@@ -173,6 +208,13 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
           font-family: monospace;
         }
 
+        .desc {
+          margin-top: 0.3em;
+          font-size: 13px;
+          color: var(--grampsjs-body-font-color-70);
+          line-height: 1.35;
+        }
+
         .status {
           margin-top: 0.45em;
           font-size: 13px;
@@ -302,6 +344,7 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
                     <th>
                       <div>${this._(this._label(key))}</div>
                       <div class="key">${key}</div>
+                      <div class="desc">${this._(this._description(key))}</div>
                     </th>
                     <td class="value">
                       <mwc-textfield
@@ -388,6 +431,50 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
 
   static _label(key) {
     return FIELD_LABELS[key] || key
+  }
+
+  _description(key) {
+    return this.constructor._description(key)
+  }
+
+  static _description(key) {
+    if (FIELD_DESCRIPTIONS[key]) {
+      return FIELD_DESCRIPTIONS[key]
+    }
+    if (key.startsWith('JWT_')) {
+      return 'JWT authentication/session setting.'
+    }
+    if (key.startsWith('OIDC_')) {
+      return 'OpenID Connect login/provider setting.'
+    }
+    if (key.startsWith('EMAIL_')) {
+      return 'Outgoing e-mail (SMTP) setting.'
+    }
+    if (key.startsWith('CORS_')) {
+      return 'Cross-origin request policy setting.'
+    }
+    if (key.startsWith('POSTGRES_')) {
+      return 'PostgreSQL connection setting used by database backends.'
+    }
+    if (key.includes('CACHE')) {
+      return 'Cache behavior and storage setting.'
+    }
+    if (key.startsWith('SEARCH_')) {
+      return 'Search/indexing behavior setting.'
+    }
+    if (key.startsWith('LLM_') || key.startsWith('VECTOR_')) {
+      return 'AI/semantic search integration setting.'
+    }
+    if (key.startsWith('RATE_LIMIT_')) {
+      return 'Rate-limiting policy setting.'
+    }
+    if (key.endsWith('_DIR') || key.endsWith('_PATH')) {
+      return 'Filesystem path/directory setting.'
+    }
+    if (key.endsWith('_URI') || key.endsWith('_URL')) {
+      return 'Network endpoint/URI setting.'
+    }
+    return 'Server behavior setting.'
   }
 
   _type(key) {
