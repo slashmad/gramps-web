@@ -14,6 +14,15 @@ const FIELD_LABELS = {
   EMAIL_PORT: 'SMTP port',
   EMAIL_HOST_USER: 'SMTP user',
   EMAIL_HOST_PASSWORD: 'SMTP password',
+  REQUEST_CACHE_CONFIG: 'Request cache config',
+  THUMBNAIL_CACHE_CONFIG: 'Thumbnail cache config',
+  PERSISTENT_CACHE_CONFIG: 'Persistent cache config',
+  REPORT_DIR: 'Report directory',
+  EXPORT_DIR: 'Export directory',
+  DISABLE_TELEMETRY: 'Disable telemetry',
+  RATE_LIMIT_MEDIA_ARCHIVE: 'Media archive rate limit',
+  CELERY_CONFIG: 'Celery queue config',
+  LOG_LEVEL: 'Log level',
 }
 
 const FIELD_DESCRIPTIONS = {
@@ -342,7 +351,7 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
                 key => html`
                   <tr>
                     <th>
-                      <div>${this._(this._label(key))}</div>
+                      <div>${this._displayLabel(key)}</div>
                       <div class="key">${key}</div>
                       <div class="desc">${this._(this._description(key))}</div>
                     </th>
@@ -427,6 +436,11 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
 
   _label(key) {
     return this.constructor._label(key)
+  }
+
+  _displayLabel(key) {
+    const label = this._label(key)
+    return FIELD_LABELS[key] ? this._(label) : label
   }
 
   static _label(key) {
