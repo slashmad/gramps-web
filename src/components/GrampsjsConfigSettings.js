@@ -93,6 +93,13 @@ const PRIORITY_KEYS = [
   'EMAIL_HOST_PASSWORD',
 ]
 
+const LOGIN_PAGE_IMAGE_KEYS = [
+  'LOGIN_PAGE_LEFT_IMAGE_URL',
+  'LOGIN_PAGE_RIGHT_IMAGE_URL',
+]
+
+const LOGIN_PAGE_IMAGE_MAX_SIZE_BYTES = 4 * 1024 * 1024
+
 const TYPE_HINTS = {
   bool: 'true / false',
   int: 'integer',
@@ -355,6 +362,7 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
       _emailTestUsername: {type: String},
       _emailTestBusy: {type: Boolean},
       _emailTestStatus: {type: Object},
+      _pendingImageUploadKey: {type: String},
     }
   }
 
@@ -371,6 +379,7 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
     this._emailTestUsername = ''
     this._emailTestBusy = false
     this._emailTestStatus = null
+    this._pendingImageUploadKey = ''
   }
 
   connectedCallback() {
@@ -472,6 +481,13 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
           this._filter = e.target.value
         }}"
       ></mwc-textfield>
+      <input
+        id="login-image-upload-input"
+        type="file"
+        accept="image/*"
+        style="display:none"
+        @change="${this._handleLoginImageFileSelected}"
+      />
       ${this._groupedVisibleKeys.map(
         group => html`
           <details class="group" ?open="${this._isGroupOpen(group.id)}">
@@ -503,6 +519,15 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
                       ${this._renderSaveStatus(key)}
                     </td>
                     <td class="actions">
+                      ${this.constructor._isLoginImageKey(key)
+                        ? html`<mwc-button
+                            outlined
+                            ?disabled=${!this.appState.permissions
+                              .canEditSettings || this._isBusy()}
+                            @click="${() => this._openLoginImageUpload(key)}"
+                            >${this._('Upload image')}</mwc-button
+                          >`
+                        : ''}
                       <mwc-button
                         outlined
                         ?disabled=${!this.appState.permissions.canEditSettings ||
@@ -720,6 +745,65 @@ class GrampsjsConfigSettings extends GrampsjsAppStateMixin(LitElement) {
   _handleInput(key, value) {
     this._clearSaveStatus(key)
     this._formData = {...this._formData, [key]: value}
+  }
+
+  static _isLoginImageKey(key) {
+    return LOGIN_PAGE_IMAGE_KEYS.includes(key)
+  }
+
+  _openLoginImageUpload(key) {
+    this._pendingImageUploadKey = key
+    const input = this.renderRoot?.getElementById('login-image-upload-input')
+    if (!input) {
+      return
+    }
+    input.value = ''
+    input.click()
+  }
+
+  static _readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(`${reader.result || ''}`)
+      reader.onerror = () =>
+        reject(new Error('Unable to read selected image file.'))
+      reader.readAsDataURL(file)
+    })
+  }
+
+  async _handleLoginImageFileSelected(event) {
+    const key = this._pendingImageUploadKey
+    this._pendingImageUploadKey = ''
+    const input = event.target
+    const file = input?.files?.[0]
+    if (!key || !file) {
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      const message = this._('Only image files are allowed.')
+      this._setSaveStatus(key, false, message)
+      fireEvent(this, 'grampsjs:error', {message})
+      input.value = ''
+      return
+    }
+    if (file.size > LOGIN_PAGE_IMAGE_MAX_SIZE_BYTES) {
+      const message = this._('Image is too large. Maximum size is 4 MB.')
+      this._setSaveStatus(key, false, message)
+      fireEvent(this, 'grampsjs:error', {message})
+      input.value = ''
+      return
+    }
+    try {
+      const dataUrl = await this.constructor._readFileAsDataUrl(file)
+      this._handleInput(key, dataUrl)
+      await this._save(key)
+    } catch (error) {
+      const message = this.constructor._errorText(error)
+      this._setSaveStatus(key, false, message)
+      fireEvent(this, 'grampsjs:error', {message})
+    } finally {
+      input.value = ''
+    }
   }
 
   _normalizeConfigData(rawData = {}) {
