@@ -11,6 +11,8 @@ import {
   fireEvent,
   objectDetail,
   renderIcon,
+  personDisplayName,
+  renderCallNameWithHighlight,
 } from '../util.js'
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
 import './GrampsJsImage.js'
@@ -94,11 +96,7 @@ export class GrampsjsSearchResultList extends GrampsjsAppStateMixin(
             `
           : ''}
         ${this.data.map((obj, i, arr) => {
-          const desc = objectDescription(
-            obj.object_type,
-            obj.object,
-            this.appState.i18n.strings
-          )
+          const desc = this._renderDescription(obj)
           return html`
             <mwc-list-item
               ?noninteractive="${!this.selectable && !this.linked}"
@@ -171,6 +169,27 @@ export class GrampsjsSearchResultList extends GrampsjsAppStateMixin(
     return obj.object_type === 'tag'
       ? this._('Tag')
       : obj.object?.gramps_id || '...'
+  }
+
+  _renderDescription(obj) {
+    if (obj.object_type !== 'person') {
+      return objectDescription(
+        obj.object_type,
+        obj.object,
+        this.appState.i18n.strings
+      )
+    }
+
+    const callNameBold = this.appState.settings.callNameHighlightBold ?? false
+    const callNameUnderline =
+      this.appState.settings.callNameHighlightUnderline ?? true
+    const displayName = personDisplayName(obj.object || {})
+    const callName = obj.object?.primary_name?.call
+
+    return renderCallNameWithHighlight(displayName, callName, {
+      bold: callNameBold,
+      underline: callNameUnderline,
+    })
   }
 
   _handleMetaClick(e, obj) {

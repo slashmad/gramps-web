@@ -38,6 +38,42 @@ export function personTitleFromProfile(personProfile) {
   } ${personProfile.name_suffix || ''}`.trim()
 }
 
+export function renderCallNameWithHighlight(
+  displayName,
+  callName,
+  {bold = false, underline = false} = {}
+) {
+  const safeName = displayName || '…'
+  const safeCall = (callName || '').trim()
+  if (!safeCall || (!bold && !underline)) {
+    return safeName
+  }
+
+  const nameLower = safeName.toLowerCase()
+  const callLower = safeCall.toLowerCase()
+  const callIndex = nameLower.indexOf(callLower)
+  if (callIndex < 0) {
+    return safeName
+  }
+
+  const classes = []
+  if (bold) {
+    classes.push('call-name-bold')
+  }
+  if (underline) {
+    classes.push('call-name-underline')
+  }
+  const classAttr = classes.join(' ')
+
+  return html`
+    ${safeName.substring(0, callIndex)}
+    <span class="${classAttr}"
+      >${safeName.substring(callIndex, callIndex + safeCall.length)}</span
+    >
+    ${safeName.substring(callIndex + safeCall.length)}
+  `
+}
+
 function displaySurname(surname) {
   return `${surname.prefix} ${surname.surname} ${surname.connector}`.trim()
 }

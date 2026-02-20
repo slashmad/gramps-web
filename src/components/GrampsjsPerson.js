@@ -7,7 +7,7 @@ import './GrampsJsImage.js'
 import './GrampsjsEditGender.js'
 import './GrampsjsPersonRelationship.js'
 import './GrampsjsFormExternalSearch.js'
-import {fireEvent} from '../util.js'
+import {fireEvent, renderCallNameWithHighlight} from '../util.js'
 
 export class GrampsjsPerson extends GrampsjsObject {
   static get styles() {
@@ -54,19 +54,15 @@ export class GrampsjsPerson extends GrampsjsObject {
     const surname = this.data.profile.name_surname || '…'
     const suffix = this.data.profile.name_suffix || ''
     const call = this.data?.primary_name?.call
-    let given = this.data.profile.name_given || call || '…'
-    const callIndex = call && call !== given ? given.search(call) : -1
-    given =
-      callIndex > -1
-        ? html`
-            ${given.substring(0, callIndex)}
-            <span class="given-name"
-              >${given.substring(callIndex, callIndex + call.length)}</span
-            >
-            ${given.substring(callIndex + call.length)}
-          `
-        : given
-    return html`${given} ${surname} ${suffix}`
+    const given = this.data.profile.name_given || call || '…'
+    const callNameBold = this.appState.settings.callNameHighlightBold ?? false
+    const callNameUnderline =
+      this.appState.settings.callNameHighlightUnderline ?? true
+    const renderedGiven = renderCallNameWithHighlight(given, call, {
+      bold: callNameBold,
+      underline: callNameUnderline,
+    })
+    return html`${renderedGiven} ${surname} ${suffix}`
   }
 
   _renderBirth() {

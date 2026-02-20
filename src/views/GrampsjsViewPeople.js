@@ -4,7 +4,12 @@ People list view
 
 import {html} from 'lit'
 import {GrampsjsViewObjectsBase} from './GrampsjsViewObjectsBase.js'
-import {prettyTimeDiffTimestamp, personFilter, filterCounts} from '../util.js'
+import {
+  prettyTimeDiffTimestamp,
+  personFilter,
+  filterCounts,
+  renderCallNameWithHighlight,
+} from '../util.js'
 import '../components/GrampsjsFilterYears.js'
 import '../components/GrampsjsFilterProperties.js'
 import '../components/GrampsjsFilterTags.js'
@@ -26,7 +31,7 @@ export class GrampsjsViewPeople extends GrampsjsViewObjectsBase {
   get _fetchUrl() {
     return `/api/people/?locale=${
       this.appState.i18n.lang || 'en'
-    }&profile=self&keys=gramps_id,profile,change`
+    }&profile=self&keys=gramps_id,primary_name,profile,change`
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -41,10 +46,17 @@ export class GrampsjsViewPeople extends GrampsjsViewObjectsBase {
 
   // eslint-disable-next-line class-methods-use-this
   _formatRow(row) {
+    const callNameBold = this.appState.settings.callNameHighlightBold ?? false
+    const callNameUnderline =
+      this.appState.settings.callNameHighlightUnderline ?? true
     const formattedRow = {
       grampsId: row.gramps_id,
       surname: row?.profile?.name_surname,
-      given: row?.profile?.name_given,
+      given: renderCallNameWithHighlight(
+        row?.profile?.name_given,
+        row?.primary_name?.call,
+        {bold: callNameBold, underline: callNameUnderline}
+      ),
       birth: row?.profile?.birth?.date,
       death: row?.profile?.death?.date,
       change: prettyTimeDiffTimestamp(row.change, this.appState.i18n.lang),

@@ -20,9 +20,14 @@ export class GrampsjsPersonRelationship extends GrampsjsConnectedComponent {
   }
 
   getUrl() {
+    const includeAssociations =
+      this.appState?.settings?.relationshipIncludeAssociations ?? true
+    const bridgeQuery = includeAssociations
+      ? '&include_associations=1&include_partner_links=1'
+      : ''
     return `/api/relations/${this.person1}/${this.person2}?depth=20&locale=${
       this.appState.i18n.lang || 'en'
-    }`
+    }${bridgeQuery}`
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -32,6 +37,7 @@ export class GrampsjsPersonRelationship extends GrampsjsConnectedComponent {
 
   renderContent() {
     const relation = this._data?.data?.relationship_string
+    const associationVia = this._data?.data?.association_via
     if (this.person1 === this.person2) {
       return html`${this._('self')}`
     }
@@ -39,6 +45,9 @@ export class GrampsjsPersonRelationship extends GrampsjsConnectedComponent {
       return html`&nbsp;`
     }
     if (relation === '') {
+      if (associationVia?.name_display) {
+        return html`${this._('Acquainted through')} ${associationVia.name_display}`
+      }
       return html`${this._('Not Related')}`
     }
     return html`${relation}`

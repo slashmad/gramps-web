@@ -4,6 +4,7 @@ import '@material/mwc-button'
 import '@material/mwc-menu'
 import '@material/mwc-select'
 import '@material/mwc-textfield'
+import '@material/web/switch/switch'
 
 import '../components/GrampsjsFormSelectObjectList.js'
 import {userRoles} from '../components/GrampsjsFormUser.js'
@@ -55,6 +56,14 @@ export class GrampsjsViewSettingsUser extends GrampsjsView {
       <h3>${this._('Select theme')}</h3>
 
       ${this.renderThemeSelect()}
+
+      <h3>${this._('Relationship display')}</h3>
+
+      ${this.renderRelationshipOptions()}
+
+      <h3>${this._('Call name display')}</h3>
+
+      ${this.renderCallNameOptions()}
 
       <h3>${this._('Change E-mail')}</h3>
 
@@ -154,6 +163,58 @@ export class GrampsjsViewSettingsUser extends GrampsjsView {
     const theme = event.target.value
     this.appState.updateSettings({theme})
     applyTheme(theme)
+  }
+
+  renderRelationshipOptions() {
+    const includeAssociations =
+      this.appState.settings.relationshipIncludeAssociations ?? true
+    return html`
+      <p>
+        ${this._('Include associations in relationship to home person')}
+        <md-switch
+          ?selected="${includeAssociations}"
+          @change="${this._handleRelationshipAssociationsChanged}"
+        ></md-switch>
+      </p>
+    `
+  }
+
+  _handleRelationshipAssociationsChanged(event) {
+    this.appState.updateSettings({
+      relationshipIncludeAssociations: event.target.selected,
+    })
+  }
+
+  renderCallNameOptions() {
+    const callNameBold = this.appState.settings.callNameHighlightBold ?? false
+    const callNameUnderline =
+      this.appState.settings.callNameHighlightUnderline ?? true
+    return html`
+      <p>
+        ${this._('Bold call name')}
+        <md-switch
+          ?selected="${callNameBold}"
+          @change="${this._handleCallNameBoldChanged}"
+        ></md-switch>
+      </p>
+      <p>
+        ${this._('Underline call name')}
+        <md-switch
+          ?selected="${callNameUnderline}"
+          @change="${this._handleCallNameUnderlineChanged}"
+        ></md-switch>
+      </p>
+    `
+  }
+
+  _handleCallNameBoldChanged(event) {
+    this.appState.updateSettings({callNameHighlightBold: event.target.selected})
+  }
+
+  _handleCallNameUnderlineChanged(event) {
+    this.appState.updateSettings({
+      callNameHighlightUnderline: event.target.selected,
+    })
   }
 
   renderChangeEmail() {

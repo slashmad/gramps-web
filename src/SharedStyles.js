@@ -237,10 +237,15 @@ export const sharedStyles = css`
     --mdc-icon-size: 32px;
   }
 
-  h2 .given-name {
+  .given-name,
+  .call-name-underline {
     text-decoration: underline var(--grampsjs-body-font-color-60);
     text-underline-offset: 0.15em;
     text-decoration-thickness: 0.1rem;
+  }
+
+  .call-name-bold {
+    font-weight: 700;
   }
 
   span.skeleton {

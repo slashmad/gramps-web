@@ -2,9 +2,10 @@ import {html, LitElement} from 'lit'
 
 import './GrampsjsTable.js'
 import {
-  personTitleFromProfile,
   familyTitleFromProfile,
   fireEvent,
+  personDisplayName,
+  renderCallNameWithHighlight,
 } from '../util.js'
 
 import {GrampsjsAppStateMixin} from '../mixins/GrampsjsAppStateMixin.js'
@@ -45,7 +46,14 @@ export class GrampsjsParticipants extends GrampsjsAppStateMixin(LitElement) {
     const peopleData = this.data[0].people.map(obj => ({
       link: `person/${obj.person.gramps_id}`,
       role: this._(obj.role),
-      objName: personTitleFromProfile(obj.person) || '',
+      objName: renderCallNameWithHighlight(
+        personDisplayName(obj.person || {}),
+        obj.person?.primary_name?.call,
+        {
+          bold: this.appState.settings.callNameHighlightBold ?? false,
+          underline: this.appState.settings.callNameHighlightUnderline ?? true,
+        }
+      ),
     }))
     return familyData.concat(peopleData)
   }
