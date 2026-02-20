@@ -62,6 +62,9 @@ class GrampsjsRectContainer extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleDown(e) {
+    if (!this.draw) {
+      return
+    }
     e.preventDefault()
     e.stopPropagation()
     this._drawActive = true
@@ -69,6 +72,9 @@ class GrampsjsRectContainer extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleUp() {
+    if (!this.draw) {
+      return
+    }
     if (!this._drawActive) {
       return
     }
@@ -76,6 +82,9 @@ class GrampsjsRectContainer extends GrampsjsAppStateMixin(LitElement) {
   }
 
   _handleMove(e) {
+    if (!this.draw) {
+      return
+    }
     if (!this._drawActive) {
       return
     }
