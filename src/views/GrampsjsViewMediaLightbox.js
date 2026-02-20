@@ -68,6 +68,8 @@ export class GrampsjsViewMediaLightbox extends GrampsjsView {
         id="gallery-lightbox"
         ?hideLeftArrow=${this.hideLeftArrow}
         ?hideRightArrow=${this.hideRightArrow}
+        ?zoomable=${this._data?.mime?.startsWith('image/')}
+        .zoomKey=${this.handle || ''}
       >
         <div slot="image">${this._innerContainerContent()}</div>
         <span slot="description"
