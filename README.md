@@ -1,13 +1,24 @@
 > [!IMPORTANT]
-> **Local Patch Block (2026-02-15)**
+> **Local Patch Block (updated 2026-02-20)**
 >
-> This fork includes an admin-focused configuration update:
+> This fork includes local customizations:
 > - Added a new **Server configuration** editor in the web UI (Settings → Administration).
 > - Config values are loaded from `/api/config/?full=1` (with fallback to `/api/config/`).
 > - Added per-setting **Save** and **Reset** actions and status for DB override/default usage.
 > - Added frontend permissions for `ViewSettings` and `EditSettings`.
 > - Fixed settings menu consistency (`Researcher Information` entry) and a system info markup bug.
 > - In **User Management**, owner/admin can now set a new password for any user directly in the edit dialog.
+> - Added relationship display enhancements:
+>   - Optional bridge display for non-blood relations (association/partner link path to home person).
+>   - Config toggle in user settings: **Include associations in relationship to home person**.
+> - Added configurable call-name highlighting in user settings:
+>   - **Bold call name**
+>   - **Underline call name**
+> - Added media lightbox image interaction improvements:
+>   - Mouse wheel zoom in/out for image media.
+>   - Drag-to-pan while zoomed in.
+>   - Zoom/pan reset when opening or switching image.
+>   - Swipe left/right navigation remains active at 1x zoom.
 >
 > Full “control everything via web UI” requires the matching backend update in
 > **gramps-web-api** (expanded `/api/config` handling + runtime override application).
